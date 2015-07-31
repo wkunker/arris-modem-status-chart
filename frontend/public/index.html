@@ -1,0 +1,207 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <title>
+        Arris tm502g data
+    </title>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
+    <script type="text/javascript">
+      // Load the Visualization API and the corechart package.
+      google.load('visualization', '1.0', {'packages':['corechart']});
+
+      function monthStringToNumber(mo) {
+          if(mo == 'JAN') return 0;
+          else if(mo == 'FEB') return 1;
+          else if(mo == 'MAR') return 2;
+          else if(mo == 'APR') return 3;
+          else if(mo == 'MAY') return 4;
+          else if(mo == 'JUN') return 5;
+          else if(mo == 'JUL') return 6;
+          else if(mo == 'AUG') return 7;
+          else if(mo == 'SEP') return 8;
+          else if(mo == 'OCT') return 9;
+          else if(mo == 'NOV') return 10;
+          else if(mo == 'DEC') return 11;
+
+          return 'ERROR';
+      }
+
+      function draw1hr24hChart(json_data) {
+        // Create the data table.
+        var data = new google.visualization.DataTable();
+        data.addColumn('date', 'Time');
+        data.addColumn('number', 'System uptime');
+        //data.addColumn('number', 'Downstream frequency');
+        data.addColumn('number', 'Downstream signal-to-noise ratio');
+        data.addColumn('number', 'Downstream power');
+        data.addColumn('number', 'Upstream modulation');
+        data.addColumn('number', 'Upstream symbol rate');
+        data.addColumn('number', 'Upstream frequency');
+        data.addColumn('number', 'Upstream power');
+        //data.addColumn('number', 'Outdoor temp (F)');
+        
+        for(var i = 0; i < json_data.results.length; i++) {
+            obj = $.parseJSON(json_data.results[i].status_data);
+
+
+            var datetimelist = obj.status.time_and_date.split(' ');
+
+
+            var hms = datetimelist[3];
+            hms_split = hms.split(':');
+            var h = Number(hms_split[0]);
+            var m = Number(hms_split[1]);
+            var s = Number(hms_split[2]);
+
+            var y = Number(datetimelist[4]);
+            var mo = Number(monthStringToNumber(datetimelist[1]));
+            var d = Number(datetimelist[2]);
+
+            var d = new Date(y, mo, d, h, m, s);
+
+            console.log(obj.status.system_uptime);
+            console.log(obj.status.system_uptime.replace(/\D/g,''));
+            var sysup_split = obj.status.system_uptime.split(' ');
+            var sysup_d = Number(sysup_split[0].replace(/\D/g, ''));
+            var sysup_split_split = sysup_split[2].split(':');
+            var sysup_h = Number(sysup_split_split[0].replace(/\D/g, ''));
+            var sysup_m = Number(sysup_split_split[1].replace(/\D/g, ''));
+            var sysup_s = Number(sysup_split_split[2].replace(/\D/g, ''));
+            var weighted_sysup = sysup_d * 24 * 60 * 60 + sysup_h * 60 * 60 + sysup_m * 60 + sysup_s
+
+
+            data.addRow([
+                    d,
+                    Number(weighted_sysup),
+                    //Number(obj.rf_parameters.downstream.frequency.replace(/\D/g,'')),
+                    Number(obj.rf_parameters.downstream.signal_to_noise_ratio.replace(/\D/g,'')),
+                    Number(obj.rf_parameters.downstream.power.replace(/\D/g,'')),
+                    Number(obj.rf_parameters.upstream.modulation.replace(/\D/g,'')),
+                    Number(obj.rf_parameters.upstream.symbol_rate.replace(/\D/g,'')),
+                    Number(obj.rf_parameters.upstream.frequency.replace(/\D/g,'')),
+                    Number(obj.rf_parameters.upstream.power.replace(/\D/g,''))
+                ]);
+
+            /*var d = new Date(json_data[i].);
+            data.addRow([
+            d, Number(json_data[i].buytotal), Number(json_data[i].selltotal)
+            ]);*/
+        }
+        
+        // Pattern month day hour (1-24) 
+        var formatter = new google.visualization.DateFormat({ pattern: "MM/dd HH:mm:ss" });
+        formatter.format(data, 0);
+
+        // Set chart options
+        var options = {'title':'Modem status over 24hr period',
+                       'width':$(window).width() - 25,
+                       'height':$(window).height() - 75,
+                       vAxis: {format:'##.##'},
+                       hAxis: {format: "HH:mm:ss"}
+                      };
+
+        // Instantiate and draw our chart, passing in some options.
+        var chart = new google.visualization.LineChart(document.getElementById('chart_1hr_24h'));
+        chart.draw(data, options);
+      };
+      
+      function draw1hr3dChart(json_data) {
+        // Create the data table.
+        var data = new google.visualization.DataTable();
+        data.addColumn('date', 'Time');
+        data.addColumn('number', 'System uptime');
+        data.addColumn('number', 'Downstream frequency');
+        data.addColumn('number', 'Downstream signal-to-noise ratio');
+        data.addColumn('number', 'Downstream power');
+        data.addColumn('number', 'Upstream modulation');
+        data.addColumn('number', 'Upstream symbol rate');
+        data.addColumn('number', 'Upstream frequency');
+        data.addColumn('number', 'Upstream power');
+        data.addColumn('number', 'Outdoor temp (F)');
+        
+        for(var i = 0; i < json_data.length; i++) {
+          var d = new Date(json_data[i].timeend);
+          data.addRow([
+            d, Number(json_data[i].buytotal), Number(json_data[i].selltotal)
+          ]);
+        }
+        
+        // Pattern month day hour (1-24) 
+        var formatter = new google.visualization.DateFormat({ pattern: "MM/dd HH:mm:ss" });
+        formatter.format(data, 0);
+
+        // Set chart options
+        var options = {'title':'Modem status over 3 day period',
+                       'width':$(window).width() - 25,
+                       'height':540,
+                       vAxis: {format:'$##.##'},
+                       hAxis: {format: "HH:mm:ss"}
+                      };
+
+        // Instantiate and draw our chart, passing in some options.
+        var chart = new google.visualization.LineChart(document.getElementById('chart_1hr_3d'));
+        chart.draw(data, options);
+      };
+      
+      var loadLatest = function() {
+        $.ajax({
+          url: '/modemstatus/',
+          type: "GET",
+          success: function(json_data) {
+              draw1hr24hChart(json_data);
+              console.log(json_data);
+          },
+          error: function() {
+            $('#chart_1hr_24h').html('Problem loading data-- please wait a moment.');
+          }
+        });
+        
+        $.ajax({
+          url: '/modemstatus/',
+          type: "GET",
+          success: function(json_data) {
+//            draw1hr3dChart(json_data);
+          },
+          error: function() {
+            $('#chart_1hr_3d').html('Problem loading data-- please wait a moment.');
+          }
+        });
+        
+        setTimeout(loadLatest, 60000);
+      }
+      
+      var reloadReady = true;
+      
+      $(function() {
+        loadLatest();
+      });
+      
+      $(window).resize(function(){
+        if(reloadReady === true) {
+          loadLatest();
+          reloadReady = false;
+          var setReloadReady = function() {
+            loadLatest();
+            reloadReady = true;
+          }
+          setTimeout(function() {
+            setReloadReady();
+          }, 50);
+        }
+      })
+    </script>
+  </head>
+  <body>
+    <div class='heading'>
+      <h2>Arris modem status</h2>
+    </div>
+    <div class='statistics'>
+      <div id='chart_1hr_24h'>
+      </div>
+      <div id='chart_1hr_3d'>
+      </div>
+    </div>
+  </body>
+</html>
